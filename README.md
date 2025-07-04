@@ -1,195 +1,233 @@
 # 📘 VTU Wallet Backend (Node.js + Express + MongoDB)
 
-This is a secure wallet funding backend built with **Node.js**, **Express**, **MongoDB**, and **VTpass API**. Users can fund their wallets via VTU services, while admins can monitor all transactions.
+This is a secure wallet funding backend built with **Node.js**, **Express**, **MongoDB**, and the **VTpass API**. It supports user authentication, wallet top-up using a VTU API (like VTpass), transaction tracking, cron-based requerying of pending transactions, and admin-only access to view all transactions.
 
 ---
 
 ## 🚀 Features
 
--   🔐 JWT Authentication (Login & Signup)
--   👤 Role-Based Access (`user`, `admin`)
--   💸 Fund wallet via VTpass (Airtime, Data)
--   📄 Save all transactions to MongoDB
--   ⏱️ Requery pending VTU transactions via cron job
--   🧾 Admin-only route to view all transactions
--   🧩 Modular structure (services, controllers, routes)
+* JWT Authentication (Login & Signup)
+* Role-Based Access (`user`, `admin`)
+* Fund Wallet via VTpass API (Airtime, Data)
+* MongoDB Transaction Storage
+* Cron Job to Requery Pending Transactions
+* Admin-Only Access to All Transactions
+* Clean Modular Architecture (routes, controllers, services)
 
 ---
 
-## 🗃️ Tech Stack
+## 📃 Tech Stack
 
--   **Backend:** Node.js, Express
--   **Database:** MongoDB with Mongoose
--   **Auth:** JWT (JSON Web Token)
--   **External API:** VTpass (sandbox or live)
--   **Scheduler:** node-cron
-
----
-
-## 🏗️ Project Structure
-
-/controllers → Business logic
-/routes → Express route definitions
-/services → External integrations (VTpass, DB actions)
-/models → Mongoose schemas
-/middlewares → Auth & error handling
-/cron → Scheduled tasks (e.g., transaction requery)
-.env → Environment variables
-
-yaml
-Copy
-Edit
+* **Backend:** Node.js, Express.js
+* **Database:** MongoDB + Mongoose
+* **Auth:** JWT
+* **API Integration:** VTpass
+* **Scheduler:** node-cron
 
 ---
 
-## ⚙️ Setup Instructions
+## 🏐 Folder Structure
 
-1. **Clone the repo**
+```
+/controllers          # Business logic
+/routes               # Route definitions
+/services             # VTpass logic + wallet/transaction services
+/models               # Mongoose schemas
+/middlewares          # JWT auth, error handling
+/cron                 # Scheduled VTpass requery job
+.env                  # Environment variables
+```
+
+---
+
+## ⚙️ Setup
+
+### 1. Clone Repo & Install
 
 ```bash
 git clone https://github.com/yourusername/vtu-wallet-backend.git
 cd vtu-wallet-backend
-Install dependencies
-
-bash
-Copy
-Edit
 npm install
-Setup .env
+```
 
-env
-Copy
-Edit
+### 2. Configure `.env`
+
+```env
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/VTU_MOCK
 
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=your_jwt_secret
+VTPASS_API_KEY=your_vtpass_api_key
+VTPASS_USERNAME=your_vtpass_username
+VTPASS_PASSWORD=your_vtpass_password
+```
 
-VTPASS_API_KEY=your_api_key
-VTPASS_USERNAME=your_username
-VTPASS_PASSWORD=your_password
-Run the project
+### 3. Run App
 
-bash
-Copy
-Edit
+```bash
 npm start
-🔐 Authentication Routes
-Register User
-POST /api/auth/register
+```
 
-json
-Copy
-Edit
+The cron job will run automatically to handle `/requery` every 5 minutes.
+
+---
+
+## 🔐 Auth Routes
+
+### Register
+
+`POST /api/auth/register`
+
+```json
 {
   "email": "user@example.com",
-  "password": "123456"
+  "password": "password123"
 }
-Login User
-POST /api/auth/login
+```
 
-json
-Copy
-Edit
+### Login
+
+`POST /api/auth/login`
+
+```json
 {
   "email": "user@example.com",
-  "password": "123456"
+  "password": "password123"
 }
-Response:
+```
 
-json
-Copy
-Edit
+**Response:**
+
+```json
 {
-  "accessToken": "jwt_token_here"
+  "accessToken": "<JWT_TOKEN>"
 }
-💰 Wallet Routes
-All routes below require Authorization: Bearer <token>
+```
 
-Fund Wallet via VTU API
-POST /api/wallet/fund
+---
 
-json
-Copy
-Edit
+## 💰 Wallet Routes
+
+> Requires `Authorization: Bearer <token>`
+
+### Fund Wallet via VTpass
+
+`POST /api/wallet/fund`
+
+```json
 {
   "amount": 200,
   "phone": "08123456789",
   "serviceID": "mtn-airtime"
 }
-Response:
+```
 
-json
-Copy
-Edit
+**Response:**
+
+```json
 {
   "message": "VTU request processed",
   "status": "pending",
-  "txId": "TX-17201...",
-  "requestId": "REQ-17201..."
+  "txId": "TX-...",
+  "requestId": "REQ-..."
 }
-🔁 VTpass Routes
-Direct VTpass test access (for dev/admin use)
+```
 
-Initiate VTU Payment
-POST /api/vtpass/pay
+---
 
-json
-Copy
-Edit
+## ♻️ VTpass API Routes
+
+### Initiate VTU Payment
+
+`POST /api/vtpass/pay`
+
+```json
 {
   "amount": 100,
   "phone": "08123456789",
   "serviceID": "airtel-airtime"
 }
-Requery VTU Transaction
-GET /api/vtpass/requery?request_id=REQ-12345678
+```
 
-🛠 Admin Routes
-Must be logged in as an admin role.
+### Requery Transaction
 
-View All Transactions
-GET /api/transactions/admin/all
+`GET /api/vtpass/requery?request_id=REQ-12345678`
 
-Returns all transactions from all users.
+---
 
-🗃️ MongoDB Schemas
-User Schema
-js
-Copy
-Edit
+## 🛠️ Admin Routes
+
+> Must be logged in as an `admin` user
+
+### View All Transactions
+
+`GET /api/transactions/admin/all`
+
+Returns:
+
+```json
+[
+  {
+    "userId": "...",
+    "txId": "TX-...",
+    "amount": 100,
+    "status": "successful",
+    "requestId": "REQ-..."
+  },
+  ...
+]
+```
+
+---
+
+## 📂 Mongoose Schemas
+
+### User
+
+```js
 {
   email: String,
-  password: String (hashed),
+  password: String,
   role: "user" | "admin"
 }
-Wallet Schema
-js
-Copy
-Edit
+```
+
+### Wallet
+
+```js
 {
   userId: ObjectId,
   balance: Number
 }
-Transaction Schema
-js
-Copy
-Edit
+```
+
+### Transaction
+
+```js
 {
   userId: ObjectId,
-  amount: Number,
   txId: String,
   requestId: String,
+  amount: Number,
   status: "pending" | "successful" | "failed"
 }
-⏱ Cron Job: Transaction Requery
-Runs every 5 minutes
-
-Checks for pending transactions
-
-Requeries using VTpass /requery
-
-Credits wallet on success
-
-Updates transaction status to successful
 ```
+
+---
+
+## ⏰ Cron Job (Requery)
+
+* Checks all `pending` transactions every 5 minutes
+* Calls VTpass `/requery` API
+* If confirmed successful:
+
+  * Wallet is credited
+  * Transaction status updated to `successful`
+
+---
+
+## 📧 Contact
+
+Author: **Micheal Peter**
+Email: michealpeter040@gmail.com(mailto:michealpeter040@gmail.com)
+License: MIT
